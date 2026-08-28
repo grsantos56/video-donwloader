@@ -43,6 +43,11 @@ def index():
 def favicon():
     return send_file('templates/logo.ico', mimetype='image/x-icon')
 
+@app.route('/templates/logo.png')
+def logo_png():
+    return send_file('templates/logo.png', mimetype='image/png')
+
+
 
 @app.route('/api/info', methods=['POST'])
 def get_info():
