@@ -5,6 +5,26 @@ import json
 import sys
 import re
 import os
+import shutil
+import uuid
+import glob
+
+
+# Try to find FFmpeg in winget packages and add it to PATH dynamically
+def setup_ffmpeg():
+    winget_packages_dir = r"C:\Users\gabri\AppData\Local\Microsoft\WinGet\Packages"
+    if os.path.exists(winget_packages_dir):
+        for entry in os.listdir(winget_packages_dir):
+            if "FFmpeg" in entry:
+                package_path = os.path.join(winget_packages_dir, entry)
+                for root, dirs, files in os.walk(package_path):
+                    if "ffmpeg.exe" in files:
+                        os.environ["PATH"] += os.pathsep + root
+                        return True
+    return False
+
+setup_ffmpeg()
+
 
 app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing
@@ -58,8 +78,13 @@ def get_info():
         thumbnail = metadata.get('thumbnail')
         formats = metadata.get('formats', [])
         
+        ffmpeg_available = shutil.which("ffmpeg") is not None
+        
         video_options = []
         audio_options = []
+        
+        # Group video formats by height to find the best format for each resolution
+        video_formats_by_height = {}
         
         # Parse formats
         for f in formats:
@@ -67,26 +92,8 @@ def get_info():
             acodec = f.get('acodec', 'none')
             ext = f.get('ext', '')
             
-            # Check if it has both audio and video (Combined)
-            if vcodec != 'none' and vcodec is not None and acodec != 'none' and acodec is not None:
-                height = f.get('height')
-                res = f.get('resolution') or (f"{height}p" if height else None) or "Video"
-                # Avoid listing storyboard format or tiny low-res files that look like images
-                if height and height < 140:
-                    continue
-                filesize = f.get('filesize') or f.get('filesize_approx')
-                filesize_mb = f"{filesize / (1024 * 1024):.1f} MB" if filesize else "Tamanho desconhecido"
-                
-                video_options.append({
-                    'format_id': f.get('format_id'),
-                    'ext': ext,
-                    'resolution': res,
-                    'height': height or 0,
-                    'filesize': filesize,
-                    'label': f"{res} ({ext.upper()}) - {filesize_mb}"
-                })
-            # Check if it is audio only
-            elif (vcodec == 'none' or vcodec is None) and (acodec != 'none' and acodec is not None):
+            # Parse Audio formats
+            if (vcodec == 'none' or vcodec is None) and (acodec != 'none' and acodec is not None):
                 abr = f.get('abr')
                 bitrate = f"{int(abr)} kbps" if abr else "Áudio"
                 filesize = f.get('filesize') or f.get('filesize_approx')
@@ -99,33 +106,78 @@ def get_info():
                     'filesize': filesize,
                     'label': f"{bitrate} ({ext.upper()}) - {filesize_mb}"
                 })
+                continue
                 
-        # If no combined format was found, fall back to video-only formats
-        if not video_options:
-            for f in formats:
-                vcodec = f.get('vcodec', 'none')
-                acodec = f.get('acodec', 'none')
-                ext = f.get('ext', '')
-                if (vcodec != 'none' and vcodec is not None) and (acodec == 'none' or acodec is None):
-                    height = f.get('height')
-                    res = f.get('resolution') or (f"{height}p" if height else None) or "Video"
-                    filesize = f.get('filesize') or f.get('filesize_approx')
-                    filesize_mb = f"{filesize / (1024 * 1024):.1f} MB" if filesize else "Tamanho desconhecido"
+            # Parse Video formats
+            if vcodec != 'none' and vcodec is not None:
+                height = f.get('height')
+                # Skip storyboard or tiny formats
+                if not height or height < 140:
+                    continue
+                
+                # We prefer MP4 and WEBM extensions for video
+                if ext not in ['mp4', 'webm']:
+                    continue
                     
-                    video_options.append({
-                        'format_id': f.get('format_id'),
-                        'ext': ext,
-                        'resolution': res,
-                        'height': height or 0,
-                        'filesize': filesize,
-                        'label': f"{res} (Sem Áudio) ({ext.upper()}) - {filesize_mb}"
-                    })
+                is_combined = acodec != 'none' and acodec is not None
+                
+                # If we don't have ffmpeg, we prefer combined formats, or show video-only with warning
+                existing = video_formats_by_height.get(height)
+                if not existing:
+                    video_formats_by_height[height] = f
+                else:
+                    # Prefer combined format over video-only for same height
+                    exist_acodec = existing.get('acodec', 'none')
+                    exist_combined = exist_acodec != 'none' and exist_acodec is not None
                     
-        # Deduplicate and sort video options by resolution (height) descending
-        seen_res = set()
+                    if is_combined and not exist_combined:
+                        video_formats_by_height[height] = f
+                    elif is_combined == exist_combined:
+                        # Compare filesizes to keep the higher bitrate one
+                        exist_size = existing.get('filesize') or existing.get('filesize_approx') or 0
+                        current_size = f.get('filesize') or f.get('filesize_approx') or 0
+                        if current_size > exist_size:
+                            video_formats_by_height[height] = f
+                            
+        # Convert the best video formats per height to video_options
+        for height, f in video_formats_by_height.items():
+            vcodec = f.get('vcodec', 'none')
+            acodec = f.get('acodec', 'none')
+            ext = f.get('ext', '')
+            is_combined = acodec != 'none' and acodec is not None
+            
+            res = f.get('resolution') or f"{height}p"
+            resolution_str = f"{height}p"
+            
+            filesize = f.get('filesize') or f.get('filesize_approx')
+            # If it's video-only and we have ffmpeg, estimate size by adding a generic audio size (~3MB)
+            if not is_combined and filesize and ffmpeg_available:
+                filesize += 3 * 1024 * 1024
+                
+            filesize_mb = f"{filesize / (1024 * 1024):.1f} MB" if filesize else "Tamanho desconhecido"
+            
+            label_suffix = ""
+            if not is_combined:
+                if ffmpeg_available:
+                    label_suffix = " (Alta Qualidade)"
+                else:
+                    label_suffix = " (Sem Áudio)"
+                    
+            video_options.append({
+                'format_id': f.get('format_id'),
+                'ext': 'mp4' if (ffmpeg_available and not is_combined) else ext, # Force mp4 output for merged formats
+                'resolution': resolution_str,
+                'height': height,
+                'filesize': filesize,
+                'label': f"{resolution_str}{label_suffix} ({ext.upper()}) - {filesize_mb}",
+                'is_combined': is_combined
+            })
+            
+        # Sort video options by height descending
         dedup_video = []
-        # Sort video options first by height descending
         video_options.sort(key=lambda x: x['height'], reverse=True)
+        # Filters duplicates (should already be deduplicated, but keeping to avoid bugs)
+        seen_res = set()
         for vo in video_options:
             res = vo['resolution']
             if res not in seen_res:
@@ -170,11 +222,21 @@ def download():
     format_id = request.args.get('format_id')
     filename = request.args.get('filename', 'download')
     ext = request.args.get('ext', 'mp4')
+    is_combined = request.args.get('is_combined', 'true').lower() == 'true'
     
     if not url or not format_id:
         return "URL e format_id são obrigatórios", 400
         
-    safe_filename = sanitize_filename(filename) + f".{ext}"
+    ffmpeg_available = shutil.which("ffmpeg") is not None
+    
+    # If it's a video-only format and ffmpeg is available, we merge it with the best audio
+    format_selector = format_id
+    if not is_combined and ffmpeg_available:
+        format_selector = f"{format_id}+bestaudio/best"
+        
+    os.makedirs('downloads', exist_ok=True)
+    task_id = str(uuid.uuid4())
+    out_template = os.path.join("downloads", f"{task_id}.%(ext)s")
     
     cmd = [
         sys.executable, "-m", "yt_dlp",
@@ -182,29 +244,60 @@ def download():
         "--remote-components", "ejs:github",
         "--no-playlist",
         "--socket-timeout", "15",
-        "-f", format_id,
-        "-o", "-",
-        url
+        "-f", format_selector,
+        "-o", out_template
     ]
     
-    def generate():
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
-        try:
-            while True:
-                chunk = proc.stdout.read(65536) # 64KB chunks
-                if not chunk:
-                    break
-                yield chunk
-        except Exception as e:
-            pass
-        finally:
-            proc.terminate()
-            proc.wait()
+    # Force MP4 container if merging video and audio
+    if not is_combined and ffmpeg_available:
+        cmd.extend(["--merge-output-format", "mp4"])
+        
+    cmd.append(url)
+    
+    try:
+        # Download locally on server
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, stdin=subprocess.DEVNULL)
+        if result.returncode != 0:
+            return f"Erro no download do yt-dlp: {result.stderr}", 500
             
-    response = Response(stream_with_context(generate()), mimetype="application/octet-stream")
-    # Content-Disposition header triggers download on frontend
-    response.headers["Content-Disposition"] = f'attachment; filename="{safe_filename}"'
-    return response
+        # Find the downloaded file (dynamic extension match)
+        matching_files = glob.glob(os.path.join("downloads", f"{task_id}.*"))
+        if not matching_files:
+            return "Arquivo baixado não foi encontrado no servidor", 500
+            
+        file_path = matching_files[0]
+        actual_ext = os.path.splitext(file_path)[1].lstrip('.')
+        
+        safe_filename = sanitize_filename(filename) + f".{actual_ext}"
+        
+        # Self-deleting binary stream wrapper
+        class FileCleanupWrapper:
+            def __init__(self, filepath):
+                self.filepath = filepath
+                self.file = open(filepath, 'rb')
+                
+            def read(self, blocksize):
+                return self.file.read(blocksize)
+                
+            def close(self):
+                self.file.close()
+                try:
+                    os.remove(self.filepath)
+                except Exception:
+                    pass
+                    
+        wrapper = FileCleanupWrapper(file_path)
+        
+        response = Response(
+            stream_with_context(iter(lambda: wrapper.read(65536), b'')),
+            mimetype="application/octet-stream"
+        )
+        response.headers["Content-Disposition"] = f'attachment; filename="{safe_filename}"'
+        response.headers["Content-Length"] = os.path.getsize(file_path)
+        return response
+        
+    except Exception as e:
+        return f"Erro no processamento do download: {str(e)}", 500
 
 if __name__ == '__main__':
     # Ensure templates folder exists

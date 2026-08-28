@@ -256,6 +256,8 @@
         let selectedFormatType = 'video'; // 'video' or 'audio'
         let selectedFormatId = null;
         let selectedExt = '';
+        let selectedIsCombined = true;
+
 
         // Form submission -> Fetch metadata
         urlForm.addEventListener('submit', async (e) => {
@@ -320,6 +322,7 @@
             } else {
                 selectedFormatId = null;
                 selectedExt = '';
+                selectedIsCombined = true;
                 emptyOptionsMsg.classList.remove('hidden');
             }
         });
@@ -339,6 +342,7 @@
             } else {
                 selectedFormatId = null;
                 selectedExt = '';
+                selectedIsCombined = true;
                 emptyOptionsMsg.classList.remove('hidden');
             }
         });
@@ -416,6 +420,7 @@
                 // Update selected values
                 selectedFormatId = fmt.format_id;
                 selectedExt = fmt.ext;
+                selectedIsCombined = fmt.is_combined !== undefined ? fmt.is_combined : true;
             });
 
             return button;
@@ -433,8 +438,8 @@
             const url = encodeURIComponent(urlInput.value.trim());
             const filename = encodeURIComponent(currentVideoData.title);
             
-            // Build the API URL
-            const downloadUrl = `/api/download?url=${url}&format_id=${selectedFormatId}&filename=${filename}&ext=${selectedExt}`;
+            // Build the API URL (with is_combined parameter)
+            const downloadUrl = `/api/download?url=${url}&format_id=${selectedFormatId}&filename=${filename}&ext=${selectedExt}&is_combined=${selectedIsCombined}`;
 
             // Create temporary anchor to initiate the browser download
             const a = document.createElement('a');
