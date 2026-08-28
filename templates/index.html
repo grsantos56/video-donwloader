@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baixador de Vídeos Multimídia</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(63, 63, 70, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-brand-600 p-2 rounded-lg text-white">
+                    <i data-lucide="download-cloud" class="w-6 h-6"></i>
+                </div>
+                <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-400 to-blue-500 bg-clip-text text-transparent">
+                    MediaFlow
+                </span>
+            </div>
+            <div class="text-xs text-zinc-500 font-medium bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-800">
+                MVP v1.0.0
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-12 flex flex-col justify-center">
+        
+        <!-- Hero Title -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+                Baixe vídeos de qualquer <span class="bg-gradient-to-r from-brand-400 to-blue-500 bg-clip-text text-transparent">Rede Social</span>
+            </h1>
+            <p class="text-zinc-400 text-lg max-w-xl mx-auto">
+                Insira o link do vídeo para baixar em alta qualidade, vídeo completo ou apenas o áudio. Sem anúncios, sem complicações.
+            </p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="w-full mb-8">
+            <form id="url-form" class="relative flex items-center">
+                <div class="absolute left-4 text-zinc-500">
+                    <i data-lucide="link" class="w-5 h-5"></i>
+                </div>
+                <input 
+                    type="url" 
+                    id="url-input" 
+                    placeholder="Cole o link do vídeo aqui (YouTube, Instagram, TikTok...)" 
+                    required
+                    class="w-full pl-12 pr-36 py-4 bg-zinc-900/90 border border-zinc-800 rounded-2xl focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-zinc-100 placeholder-zinc-500 text-base shadow-lg transition-all"
+                >
+                <button 
+                    type="submit" 
+                    id="submit-btn"
+                    class="absolute right-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-medium rounded-xl flex items-center gap-2 transition-all shadow-md"
+                >
+                    <span>Analisar</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+            <div id="error-message" class="hidden mt-3 text-red-400 text-sm flex items-center gap-2 px-4 py-2 bg-red-950/20 border border-red-900/30 rounded-xl">
+                <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
+                <span id="error-text">Ocorreu um erro ao processar o link.</span>
+            </div>
+        </div>
+
+        <!-- Skeleton Loader (Hidden by default) -->
+        <div id="skeleton-loader" class="hidden glass-card rounded-2xl p-6 shadow-xl animate-pulse">
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Thumbnail Skeleton -->
+                <div class="w-full md:w-2/5 aspect-video bg-zinc-800 rounded-xl"></div>
+                <!-- Info Skeleton -->
+                <div class="flex-1 space-y-4 py-1">
+                    <div class="h-6 bg-zinc-800 rounded w-3/4"></div>
+                    <div class="h-4 bg-zinc-800 rounded w-1/4"></div>
+                    <div class="space-y-2 pt-4">
+                        <div class="h-4 bg-zinc-800 rounded w-1/2"></div>
+                        <div class="h-10 bg-zinc-800 rounded-xl w-full"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Card (Hidden by default) -->
+        <div id="result-card" class="hidden glass-card rounded-3xl p-6 shadow-2xl transition-all duration-300">
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- Thumbnail Preview -->
+                <div class="w-full md:w-2/5 flex-shrink-0">
+                    <div class="relative aspect-video rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800/80 group">
+                        <img id="video-thumbnail" src="" alt="Thumbnail" class="w-full h-full object-cover">
+                        <div class="absolute bottom-3 right-3 bg-zinc-950/90 border border-zinc-800/60 text-xs px-2.5 py-1 rounded-md font-semibold text-zinc-200 flex items-center gap-1.5 backdrop-blur-sm">
+                            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                            <span id="video-duration">00:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download Options -->
+                <div class="flex-grow flex flex-col justify-between">
+                    <div>
+                        <!-- Title -->
+                        <h2 id="video-title" class="text-xl font-bold leading-snug text-zinc-100 mb-6 line-clamp-2">
+                            Título do vídeo
+                        </h2>
+
+                        <!-- Tabs for Video / Audio -->
+                        <div class="flex border-b border-zinc-800 mb-6">
+                            <button id="tab-video" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-brand-500 text-brand-400 flex items-center justify-center gap-2 transition-all">
+                                <i data-lucide="video" class="w-4 h-4"></i>
+                                Vídeo (MP4)
+                            </button>
+                            <button id="tab-audio" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 flex items-center justify-center gap-2 transition-all">
+                                <i data-lucide="music" class="w-4 h-4"></i>
+                                Apenas Áudio
+                            </button>
+                        </div>
+
+                        <!-- Quality Options Container -->
+                        <div class="mb-8">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-zinc-500 block mb-3">
+                                Selecione a Qualidade
+                            </label>
+                            
+                            <!-- Video Options Grid -->
+                            <div id="video-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Dynamically filled -->
+                            </div>
+
+                            <!-- Audio Options Grid -->
+                            <div id="audio-options-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Dynamically filled -->
+                            </div>
+                            
+                            <!-- Fallback/Empty message -->
+                            <div id="empty-options-msg" class="hidden text-zinc-500 text-sm py-4 text-center border border-dashed border-zinc-800 rounded-xl">
+                                Nenhuma opção disponível para esta categoria.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Trigger Button -->
+                    <div>
+                        <button id="download-btn" class="w-full py-4 bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 active:scale-[0.98] text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 shadow-lg shadow-brand-950/20 transition-all">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                            <span>Baixar Arquivo</span>
+                        </button>
+                        <div id="download-status" class="hidden mt-3 text-center text-xs text-brand-400 flex items-center justify-center gap-2">
+                            <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
+                            <span>O download iniciará em breve. Por favor, aguarde o processamento...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-zinc-900 bg-zinc-950/40 py-8">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex flex-wrap justify-center gap-6 text-sm text-zinc-500">
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> YouTube</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> TikTok</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> Instagram</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> Twitter / X</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> Facebook</span>
+            </div>
+            <div class="text-xs text-zinc-600">
+                &copy; 2026 MediaFlow. Interface limpa e moderna.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Frontend logic -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // DOM elements
+        const urlForm = document.getElementById('url-form');
+        const urlInput = document.getElementById('url-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        
+        const skeletonLoader = document.getElementById('skeleton-loader');
+        const resultCard = document.getElementById('result-card');
+        
+        const videoThumbnail = document.getElementById('video-thumbnail');
+        const videoDuration = document.getElementById('video-duration');
+        const videoTitle = document.getElementById('video-title');
+        
+        const tabVideo = document.getElementById('tab-video');
+        const tabAudio = document.getElementById('tab-audio');
+        
+        const videoOptionsGrid = document.getElementById('video-options-grid');
+        const audioOptionsGrid = document.getElementById('audio-options-grid');
+        const emptyOptionsMsg = document.getElementById('empty-options-msg');
+        
+        const downloadBtn = document.getElementById('download-btn');
+        const downloadStatus = document.getElementById('download-status');
+
+        let currentVideoData = null;
+        let selectedFormatType = 'video'; // 'video' or 'audio'
+        let selectedFormatId = null;
+        let selectedExt = '';
+
+        // Form submission -> Fetch metadata
+        urlForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = urlInput.value.trim();
+            if (!url) return;
+
+            // Reset states
+            errorMessage.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            skeletonLoader.classList.remove('hidden');
+            
+            // Disable inputs
+            urlInput.disabled = true;
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50');
+
+            try {
+                const response = await fetch('/api/info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao processar as informações do vídeo.');
+                }
+
+                currentVideoData = data;
+                renderResultCard(data);
+                
+            } catch (err) {
+                console.error(err);
+                errorText.textContent = err.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                // Restore inputs
+                urlInput.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50');
+                skeletonLoader.classList.add('hidden');
+            }
+        });
+
+        // Tabs switching
+        tabVideo.addEventListener('click', () => {
+            selectedFormatType = 'video';
+            tabVideo.className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-brand-500 text-brand-400 flex items-center justify-center gap-2 transition-all";
+            tabAudio.className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 flex items-center justify-center gap-2 transition-all";
+            videoOptionsGrid.classList.remove('hidden');
+            audioOptionsGrid.classList.add('hidden');
+            
+            // Select first format in video grid
+            const firstVideoOption = videoOptionsGrid.querySelector('.format-option-btn');
+            if (firstVideoOption) {
+                firstVideoOption.click();
+                emptyOptionsMsg.classList.add('hidden');
+            } else {
+                selectedFormatId = null;
+                selectedExt = '';
+                emptyOptionsMsg.classList.remove('hidden');
+            }
+        });
+
+        tabAudio.addEventListener('click', () => {
+            selectedFormatType = 'audio';
+            tabAudio.className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-brand-500 text-brand-400 flex items-center justify-center gap-2 transition-all";
+            tabVideo.className = "flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 flex items-center justify-center gap-2 transition-all";
+            audioOptionsGrid.classList.remove('hidden');
+            videoOptionsGrid.classList.add('hidden');
+            
+            // Select first format in audio grid
+            const firstAudioOption = audioOptionsGrid.querySelector('.format-option-btn');
+            if (firstAudioOption) {
+                firstAudioOption.click();
+                emptyOptionsMsg.classList.add('hidden');
+            } else {
+                selectedFormatId = null;
+                selectedExt = '';
+                emptyOptionsMsg.classList.remove('hidden');
+            }
+        });
+
+        // Helper to render output
+        function renderResultCard(data) {
+            videoThumbnail.src = data.thumbnail || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&auto=format&fit=crop&q=60';
+            videoDuration.textContent = data.duration;
+            videoTitle.textContent = data.title;
+
+            // Render Video Options
+            videoOptionsGrid.innerHTML = '';
+            if (data.video_formats && data.video_formats.length > 0) {
+                data.video_formats.forEach((fmt) => {
+                    const btn = createFormatButton(fmt);
+                    videoOptionsGrid.appendChild(btn);
+                });
+            }
+
+            // Render Audio Options
+            audioOptionsGrid.innerHTML = '';
+            if (data.audio_formats && data.audio_formats.length > 0) {
+                data.audio_formats.forEach((fmt) => {
+                    const btn = createFormatButton(fmt);
+                    audioOptionsGrid.appendChild(btn);
+                });
+            }
+
+            // Show card
+            resultCard.classList.remove('hidden');
+            
+            // Default to video tab and select first option
+            tabVideo.click();
+            
+            lucide.createIcons();
+        }
+
+        // Helper to create quality selector button
+        function createFormatButton(fmt) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'format-option-btn w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all duration-200 border-zinc-800 hover:border-zinc-700 bg-zinc-900/40 hover:bg-zinc-900/80';
+            button.dataset.formatId = fmt.format_id;
+            button.dataset.ext = fmt.ext;
+            
+            const isAudio = selectedFormatType === 'audio' || fmt.abr !== undefined;
+            const iconName = isAudio ? 'music' : 'video';
+
+            button.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-zinc-800 text-zinc-400 group-hover:text-zinc-200">
+                        <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-sm text-zinc-200">${fmt.label.split(' - ')[0]}</p>
+                        <p class="text-xs text-zinc-500">${fmt.ext.toUpperCase()}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-medium text-zinc-400">${fmt.label.split(' - ')[1] || ''}</span>
+                </div>
+            `;
+
+            button.addEventListener('click', () => {
+                // Remove active classes from all buttons in both grids
+                document.querySelectorAll('.format-option-btn').forEach(btn => {
+                    btn.classList.remove('border-brand-500', 'bg-brand-500/5', 'ring-1', 'ring-brand-500');
+                    btn.classList.add('border-zinc-800', 'bg-zinc-900/40');
+                });
+
+                // Add active state to clicked button
+                button.classList.remove('border-zinc-800', 'bg-zinc-900/40');
+                button.classList.add('border-brand-500', 'bg-brand-500/5', 'ring-1', 'ring-brand-500');
+
+                // Update selected values
+                selectedFormatId = fmt.format_id;
+                selectedExt = fmt.ext;
+            });
+
+            return button;
+        }
+
+        // Trigger Download
+        downloadBtn.addEventListener('click', () => {
+            if (!urlInput.value || !selectedFormatId) return;
+
+            // Show loading status
+            downloadStatus.classList.remove('hidden');
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add('opacity-75');
+
+            const url = encodeURIComponent(urlInput.value.trim());
+            const filename = encodeURIComponent(currentVideoData.title);
+            
+            // Build the API URL
+            const downloadUrl = `/api/download?url=${url}&format_id=${selectedFormatId}&filename=${filename}&ext=${selectedExt}`;
+
+            // Create temporary anchor to initiate the browser download
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = ''; // Let response headers decide the filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Hide the status indicator after a few seconds (once the stream starts)
+            setTimeout(() => {
+                downloadStatus.classList.add('hidden');
+                downloadBtn.disabled = false;
+                downloadBtn.classList.remove('opacity-75');
+            }, 6000);
+        });
+    </script>
+</body>
+</html>
