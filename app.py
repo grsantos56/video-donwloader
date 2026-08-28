@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, Response, jsonify, stream_with_context
+from flask import Flask, render_template, request, Response, jsonify, stream_with_context, send_file
 from flask_cors import CORS
 import subprocess
 import json
@@ -37,6 +37,12 @@ def sanitize_filename(name):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/templates/logo.ico')
+@app.route('/favicon.ico')
+def favicon():
+    return send_file('templates/logo.ico', mimetype='image/x-icon')
+
 
 @app.route('/api/info', methods=['POST'])
 def get_info():
