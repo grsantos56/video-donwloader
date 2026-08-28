@@ -40,6 +40,22 @@ Para rodar e testar o projeto localmente, certifique-se de ter instalado:
 
 ## 🔧 Instalação e Execução
 
+### Opção 1: Usando Docker (Recomendado)
+
+O Docker automatiza todas as instalações de dependências de sistema (como Python, Node.js e FFmpeg), garantindo que a aplicação funcione instantaneamente sem configurações de PATH no Windows.
+
+1. **Subir os Contêineres:**
+   ```bash
+   docker compose up --build
+   ```
+
+2. **Acessar no Navegador:**
+   Abra seu navegador em [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+---
+
+### Opção 2: Execução Manual Local
+
 1. **Clonar o Repositório:**
    ```bash
    git clone https://github.com/grsantos56/video-donwloader.git
