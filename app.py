@@ -31,6 +31,9 @@ def get_info():
         sys.executable, "-m", "yt_dlp",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
+        "--no-interactive",
+        "--no-playlist",
+        "--socket-timeout", "15",
         "-j",
         url
     ]
@@ -178,6 +181,9 @@ def download():
         sys.executable, "-m", "yt_dlp",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
+        "--no-interactive",
+        "--no-playlist",
+        "--socket-timeout", "15",
         "-f", format_id,
         "-o", "-",
         url

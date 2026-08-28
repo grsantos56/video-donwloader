@@ -38,6 +38,12 @@
             font-family: 'Inter', sans-serif;
         }
         .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(228, 228, 231, 0.8);
+        }
+        .dark .glass-card {
             background: rgba(24, 24, 27, 0.6);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -45,21 +51,26 @@
         }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+<body class="bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white transition-colors duration-300">
 
     <!-- Header -->
-    <header class="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
+    <header class="border-b border-zinc-200 dark:border-zinc-900 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
         <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <div class="bg-brand-600 p-2 rounded-lg text-white">
                     <i data-lucide="download-cloud" class="w-6 h-6"></i>
                 </div>
-                <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-400 to-blue-500 bg-clip-text text-transparent">
+                <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-600 to-blue-600 dark:from-brand-400 dark:to-blue-500 bg-clip-text text-transparent">
                     MediaFlow
                 </span>
             </div>
-            <div class="text-xs text-zinc-500 font-medium bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-800">
-                MVP v1.0.0
+            <div class="flex items-center gap-3">
+                <button id="theme-toggle" class="p-2 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors duration-200" aria-label="Alternar Tema">
+                    <i id="theme-toggle-icon" data-lucide="sun" class="w-5 h-5"></i>
+                </button>
+                <div class="text-xs text-zinc-500 font-medium bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
+                    MVP v1.0.0
+                </div>
             </div>
         </div>
     </header>
@@ -69,10 +80,10 @@
         
         <!-- Hero Title -->
         <div class="text-center mb-10">
-            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-                Baixe vídeos de qualquer <span class="bg-gradient-to-r from-brand-400 to-blue-500 bg-clip-text text-transparent">Rede Social</span>
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                Baixe vídeos de qualquer <span class="bg-gradient-to-r from-brand-600 to-blue-600 dark:from-brand-400 dark:to-blue-500 bg-clip-text text-transparent">Rede Social</span>
             </h1>
-            <p class="text-zinc-400 text-lg max-w-xl mx-auto">
+            <p class="text-zinc-600 dark:text-zinc-400 text-lg max-w-xl mx-auto transition-colors duration-300">
                 Insira o link do vídeo para baixar em alta qualidade, vídeo completo ou apenas o áudio. Sem anúncios, sem complicações.
             </p>
         </div>
@@ -88,7 +99,7 @@
                     id="url-input" 
                     placeholder="Cole o link do vídeo aqui (YouTube, Instagram, TikTok...)" 
                     required
-                    class="w-full pl-12 pr-36 py-4 bg-zinc-900/90 border border-zinc-800 rounded-2xl focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-zinc-100 placeholder-zinc-500 text-base shadow-lg transition-all"
+                    class="w-full pl-12 pr-36 py-4 bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 rounded-2xl focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 text-base shadow-lg transition-all"
                 >
                 <button 
                     type="submit" 
@@ -99,7 +110,7 @@
                     <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
             </form>
-            <div id="error-message" class="hidden mt-3 text-red-400 text-sm flex items-center gap-2 px-4 py-2 bg-red-950/20 border border-red-900/30 rounded-xl">
+            <div id="error-message" class="hidden mt-3 text-red-600 dark:text-red-400 text-sm flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-xl transition-all duration-300">
                 <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
                 <span id="error-text">Ocorreu um erro ao processar o link.</span>
             </div>
@@ -127,9 +138,9 @@
             <div class="flex flex-col md:flex-row gap-8">
                 <!-- Thumbnail Preview -->
                 <div class="w-full md:w-2/5 flex-shrink-0">
-                    <div class="relative aspect-video rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800/80 group">
+                    <div class="relative aspect-video rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 group">
                         <img id="video-thumbnail" src="" alt="Thumbnail" class="w-full h-full object-cover">
-                        <div class="absolute bottom-3 right-3 bg-zinc-950/90 border border-zinc-800/60 text-xs px-2.5 py-1 rounded-md font-semibold text-zinc-200 flex items-center gap-1.5 backdrop-blur-sm">
+                        <div class="absolute bottom-3 right-3 bg-white/90 dark:bg-zinc-950/90 border border-zinc-200 dark:border-zinc-800/60 text-xs px-2.5 py-1 rounded-md font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 backdrop-blur-sm transition-all duration-300">
                             <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                             <span id="video-duration">00:00</span>
                         </div>
@@ -140,17 +151,17 @@
                 <div class="flex-grow flex flex-col justify-between">
                     <div>
                         <!-- Title -->
-                        <h2 id="video-title" class="text-xl font-bold leading-snug text-zinc-100 mb-6 line-clamp-2">
+                        <h2 id="video-title" class="text-xl font-bold leading-snug text-zinc-900 dark:text-zinc-100 mb-6 line-clamp-2 transition-colors duration-300">
                             Título do vídeo
                         </h2>
 
                         <!-- Tabs for Video / Audio -->
-                        <div class="flex border-b border-zinc-800 mb-6">
-                            <button id="tab-video" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-brand-500 text-brand-400 flex items-center justify-center gap-2 transition-all">
+                        <div class="flex border-b border-zinc-200 dark:border-zinc-800 mb-6 transition-colors duration-300">
+                            <button id="tab-video" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-brand-500 text-brand-600 dark:text-brand-400 flex items-center justify-center gap-2 transition-all">
                                 <i data-lucide="video" class="w-4 h-4"></i>
                                 Vídeo (MP4)
                             </button>
-                            <button id="tab-audio" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 flex items-center justify-center gap-2 transition-all">
+                            <button id="tab-audio" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center justify-center gap-2 transition-all">
                                 <i data-lucide="music" class="w-4 h-4"></i>
                                 Apenas Áudio
                             </button>
@@ -173,7 +184,7 @@
                             </div>
                             
                             <!-- Fallback/Empty message -->
-                            <div id="empty-options-msg" class="hidden text-zinc-500 text-sm py-4 text-center border border-dashed border-zinc-800 rounded-xl">
+                            <div id="empty-options-msg" class="hidden text-zinc-500 text-sm py-4 text-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl transition-all duration-300">
                                 Nenhuma opção disponível para esta categoria.
                             </div>
                         </div>
@@ -197,7 +208,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-zinc-900 bg-zinc-950/40 py-8">
+    <footer class="border-t border-zinc-200 dark:border-zinc-900 bg-zinc-100/40 dark:bg-zinc-950/40 py-8 transition-colors duration-300">
         <div class="max-w-4xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="flex flex-wrap justify-center gap-6 text-sm text-zinc-500">
                 <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> YouTube</span>
@@ -206,7 +217,7 @@
                 <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> Twitter / X</span>
                 <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i> Facebook</span>
             </div>
-            <div class="text-xs text-zinc-600">
+            <div class="text-xs text-zinc-400 dark:text-zinc-600 transition-colors duration-300">
                 &copy; 2026 MediaFlow. Interface limpa e moderna.
             </div>
         </div>
@@ -369,7 +380,7 @@
         function createFormatButton(fmt) {
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'format-option-btn w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all duration-200 border-zinc-800 hover:border-zinc-700 bg-zinc-900/40 hover:bg-zinc-900/80';
+            button.className = 'format-option-btn w-full p-4 rounded-xl border text-left flex items-center justify-between transition-all duration-200 border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 bg-white hover:bg-zinc-50 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80 shadow-sm hover:shadow';
             button.dataset.formatId = fmt.format_id;
             button.dataset.ext = fmt.ext;
             
@@ -378,29 +389,29 @@
 
             button.innerHTML = `
                 <div class="flex items-center gap-3">
-                    <div class="p-2 rounded-lg bg-zinc-800 text-zinc-400 group-hover:text-zinc-200">
+                    <div class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
                         <i data-lucide="${iconName}" class="w-4 h-4"></i>
                     </div>
                     <div>
-                        <p class="font-semibold text-sm text-zinc-200">${fmt.label.split(' - ')[0]}</p>
-                        <p class="text-xs text-zinc-500">${fmt.ext.toUpperCase()}</p>
+                        <p class="font-semibold text-sm text-zinc-800 dark:text-zinc-200">${fmt.label.split(' - ')[0]}</p>
+                        <p class="text-xs text-zinc-400 dark:text-zinc-500">${fmt.ext.toUpperCase()}</p>
                     </div>
                 </div>
                 <div class="text-right">
-                    <span class="text-xs font-medium text-zinc-400">${fmt.label.split(' - ')[1] || ''}</span>
+                    <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">${fmt.label.split(' - ')[1] || ''}</span>
                 </div>
             `;
 
             button.addEventListener('click', () => {
                 // Remove active classes from all buttons in both grids
                 document.querySelectorAll('.format-option-btn').forEach(btn => {
-                    btn.classList.remove('border-brand-500', 'bg-brand-500/5', 'ring-1', 'ring-brand-500');
-                    btn.classList.add('border-zinc-800', 'bg-zinc-900/40');
+                    btn.classList.remove('border-brand-500', 'bg-brand-50/50', 'dark:bg-brand-500/5', 'ring-1', 'ring-brand-500');
+                    btn.classList.add('border-zinc-200', 'dark:border-zinc-800', 'bg-white', 'dark:bg-zinc-900/40');
                 });
 
                 // Add active state to clicked button
-                button.classList.remove('border-zinc-800', 'bg-zinc-900/40');
-                button.classList.add('border-brand-500', 'bg-brand-500/5', 'ring-1', 'ring-brand-500');
+                button.classList.remove('border-zinc-200', 'dark:border-zinc-800', 'bg-white', 'dark:bg-zinc-900/40');
+                button.classList.add('border-brand-500', 'bg-brand-50/50', 'dark:bg-brand-500/5', 'ring-1', 'ring-brand-500');
 
                 // Update selected values
                 selectedFormatId = fmt.format_id;
@@ -439,6 +450,37 @@
                 downloadBtn.disabled = false;
                 downloadBtn.classList.remove('opacity-75');
             }, 6000);
+        });
+
+        // Theme Toggle Logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeToggleIcon = document.getElementById('theme-toggle-icon');
+        const htmlElement = document.documentElement;
+
+        function setTheme(isDark) {
+            if (isDark) {
+                htmlElement.classList.add('dark');
+                themeToggleIcon.setAttribute('data-lucide', 'sun');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                htmlElement.classList.remove('dark');
+                themeToggleIcon.setAttribute('data-lucide', 'moon');
+                localStorage.setItem('theme', 'light');
+            }
+            lucide.createIcons();
+        }
+
+        // Init theme (default to dark)
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            setTheme(false);
+        } else {
+            setTheme(true);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const isCurrentlyDark = htmlElement.classList.contains('dark');
+            setTheme(!isCurrentlyDark);
         });
     </script>
 </body>
