@@ -31,7 +31,6 @@ def get_info():
         sys.executable, "-m", "yt_dlp",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
-        "--no-interactive",
         "--no-playlist",
         "--socket-timeout", "15",
         "-j",
@@ -39,7 +38,7 @@ def get_info():
     ]
     
     try:
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', stdin=subprocess.DEVNULL)
         if result.returncode != 0:
             # Try to capture clean error message from stderr
             err_msg = result.stderr.strip()
@@ -181,7 +180,6 @@ def download():
         sys.executable, "-m", "yt_dlp",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
-        "--no-interactive",
         "--no-playlist",
         "--socket-timeout", "15",
         "-f", format_id,
@@ -190,7 +188,7 @@ def download():
     ]
     
     def generate():
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
         try:
             while True:
                 chunk = proc.stdout.read(65536) # 64KB chunks
