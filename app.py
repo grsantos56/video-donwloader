@@ -211,12 +211,28 @@ def get_info():
             else:
                 duration_str = f"{m:02d}:{s:02d}"
                 
+        # Group video formats by extension
+        grouped_video = {}
+        for vo in dedup_video:
+            ext_key = vo['ext'].lower()
+            if ext_key not in grouped_video:
+                grouped_video[ext_key] = []
+            grouped_video[ext_key].append(vo)
+            
+        # Group audio formats by extension
+        grouped_audio = {}
+        for ao in dedup_audio:
+            ext_key = ao['ext'].lower()
+            if ext_key not in grouped_audio:
+                grouped_audio[ext_key] = []
+            grouped_audio[ext_key].append(ao)
+
         return jsonify({
             'title': title,
             'duration': duration_str,
             'thumbnail': thumbnail,
-            'video_formats': dedup_video,
-            'audio_formats': dedup_audio
+            'video_formats': grouped_video,
+            'audio_formats': grouped_audio
         })
         
     except Exception as e:

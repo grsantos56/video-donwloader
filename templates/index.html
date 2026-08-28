@@ -199,12 +199,12 @@
                             </label>
                             
                             <!-- Video Options Grid -->
-                            <div id="video-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div id="video-options-grid" class="space-y-6">
                                 <!-- Dynamically filled -->
                             </div>
 
                             <!-- Audio Options Grid -->
-                            <div id="audio-options-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div id="audio-options-grid" class="hidden space-y-6">
                                 <!-- Dynamically filled -->
                             </div>
                             
@@ -380,19 +380,57 @@
 
             // Render Video Options
             videoOptionsGrid.innerHTML = '';
-            if (data.video_formats && data.video_formats.length > 0) {
-                data.video_formats.forEach((fmt) => {
-                    const btn = createFormatButton(fmt);
-                    videoOptionsGrid.appendChild(btn);
+            const videoKeys = Object.keys(data.video_formats || {});
+            if (videoKeys.length > 0) {
+                videoKeys.forEach((ext) => {
+                    const formats = data.video_formats[ext];
+                    if (formats.length === 0) return;
+                    
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'flex flex-col gap-2';
+                    groupContainer.innerHTML = `
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-300/40 dark:border-zinc-800/85 uppercase tracking-wider transition-colors duration-300">
+                                Formato ${ext.toUpperCase()}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="video-group-${ext}"></div>
+                    `;
+                    videoOptionsGrid.appendChild(groupContainer);
+                    
+                    const subGrid = groupContainer.querySelector(`#video-group-${ext}`);
+                    formats.forEach((fmt) => {
+                        const btn = createFormatButton(fmt);
+                        subGrid.appendChild(btn);
+                    });
                 });
             }
 
             // Render Audio Options
             audioOptionsGrid.innerHTML = '';
-            if (data.audio_formats && data.audio_formats.length > 0) {
-                data.audio_formats.forEach((fmt) => {
-                    const btn = createFormatButton(fmt);
-                    audioOptionsGrid.appendChild(btn);
+            const audioKeys = Object.keys(data.audio_formats || {});
+            if (audioKeys.length > 0) {
+                audioKeys.forEach((ext) => {
+                    const formats = data.audio_formats[ext];
+                    if (formats.length === 0) return;
+                    
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'flex flex-col gap-2';
+                    groupContainer.innerHTML = `
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-zinc-200/60 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-300/40 dark:border-zinc-800/85 uppercase tracking-wider transition-colors duration-300">
+                                Formato ${ext.toUpperCase()}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="audio-group-${ext}"></div>
+                    `;
+                    audioOptionsGrid.appendChild(groupContainer);
+                    
+                    const subGrid = groupContainer.querySelector(`#audio-group-${ext}`);
+                    formats.forEach((fmt) => {
+                        const btn = createFormatButton(fmt);
+                        subGrid.appendChild(btn);
+                    });
                 });
             }
 
