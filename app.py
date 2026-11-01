@@ -38,12 +38,19 @@ def sanitize_filename(name):
 def index():
     return render_template('index.html')
 
+@app.route('/health')
+@app.route('/api/health')
+def health():
+    return jsonify({'status': 'ok'}), 200
+
 @app.route('/templates/logo.ico')
+@app.route('/logo.ico')
 @app.route('/favicon.ico')
 def favicon():
     return send_file('templates/logo.ico', mimetype='image/x-icon')
 
 @app.route('/templates/logo.png')
+@app.route('/logo.png')
 def logo_png():
     return send_file('templates/logo.png', mimetype='image/png')
 
@@ -321,12 +328,17 @@ def download():
         )
         response.headers["Content-Disposition"] = f'attachment; filename="{safe_filename}"'
         response.headers["Content-Length"] = os.path.getsize(file_path)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "Content-Disposition, Content-Length"
         return response
         
     except Exception as e:
         return f"Erro no processamento do download: {str(e)}", 500
 
 if __name__ == '__main__':
-    # Ensure templates folder exists
+    # Ensure necessary folders exist
     os.makedirs('templates', exist_ok=True)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    os.makedirs('downloads', exist_ok=True)
+    port = int(os.environ.get("PORT", 5000))
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)

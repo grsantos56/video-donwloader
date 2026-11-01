@@ -96,7 +96,10 @@
                     MediaFlow
                 </span>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <button id="server-config-btn" title="Configurar URL do Backend Render" class="p-2 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors duration-200" aria-label="Configurar Backend">
+                    <i data-lucide="server" class="w-5 h-5"></i>
+                </button>
                 <button id="theme-toggle" class="p-2 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors duration-200" aria-label="Alternar Tema">
                     <i id="theme-toggle-icon" data-lucide="sun" class="w-5 h-5"></i>
                 </button>
@@ -411,6 +414,45 @@
         let selectedIsCombined = true;
 
 
+        // Configuração do Backend (Render ou Localhost)
+        const DEFAULT_BACKEND_URL = 'https://video-donwloader.onrender.com';
+        
+        // Permite definir backend via parâmetro na URL (?backend=https://...)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('backend')) {
+            const paramVal = urlParams.get('backend').trim().replace(/\/$/, '');
+            if (paramVal) {
+                localStorage.setItem('MEDIAFLOW_BACKEND_URL', paramVal);
+            }
+        }
+
+        function getBackendUrl() {
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return '';
+            }
+            const saved = localStorage.getItem('MEDIAFLOW_BACKEND_URL');
+            return (saved ? saved.replace(/\/$/, '') : DEFAULT_BACKEND_URL);
+        }
+
+        const BACKEND_URL = getBackendUrl();
+
+        // Botão para configurar URL do servidor
+        const serverConfigBtn = document.getElementById('server-config-btn');
+        if (serverConfigBtn) {
+            serverConfigBtn.addEventListener('click', () => {
+                const current = localStorage.getItem('MEDIAFLOW_BACKEND_URL') || DEFAULT_BACKEND_URL;
+                const input = prompt('Insira a URL do seu backend no Render (ex: https://seu-servico.onrender.com):', current);
+                if (input !== null) {
+                    const clean = input.trim().replace(/\/$/, '');
+                    if (clean) {
+                        localStorage.setItem('MEDIAFLOW_BACKEND_URL', clean);
+                        alert(`Backend configurado para: ${clean}`);
+                        window.location.reload();
+                    }
+                }
+            });
+        }
+
         // Form submission -> Fetch metadata
         urlForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -428,7 +470,7 @@
             submitBtn.classList.add('opacity-50');
 
             try {
-                const response = await fetch('/api/info', {
+                const response = await fetch(`${BACKEND_URL}/api/info`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -447,7 +489,11 @@
                 
             } catch (err) {
                 console.error(err);
-                errorText.textContent = err.message;
+                let msg = err.message || 'Erro ao processar as informações do vídeo.';
+                if (err.name === 'TypeError' && err.message.toLowerCase().includes('fetch')) {
+                    msg = `Não foi possível conectar ao servidor backend (${BACKEND_URL || 'local'}). Se o servidor estiver no Render, ele pode levar cerca de 50s para despertar da hibernação. Tente novamente em instantes ou clique no ícone de servidor no topo para verificar a URL.`;
+                }
+                errorText.textContent = msg;
                 errorMessage.classList.remove('hidden');
             } finally {
                 // Restore inputs
@@ -629,7 +675,7 @@
             const filename = encodeURIComponent(currentVideoData.title);
             
             // Build the API URL (with is_combined parameter)
-            const downloadUrl = `/api/download?url=${url}&format_id=${selectedFormatId}&filename=${filename}&ext=${selectedExt}&is_combined=${selectedIsCombined}`;
+            const downloadUrl = `${BACKEND_URL}/api/download?url=${url}&format_id=${selectedFormatId}&filename=${filename}&ext=${selectedExt}&is_combined=${selectedIsCombined}`;
 
             // Create temporary anchor to initiate the browser download
             const a = document.createElement('a');

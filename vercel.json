@@ -1,0 +1,10 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/templates/index.html" },
+    { "source": "/favicon.ico", "destination": "/templates/logo.ico" },
+    { "source": "/logo.ico", "destination": "/templates/logo.ico" },
+    { "source": "/logo.png", "destination": "/templates/logo.png" },
+    { "source": "/templates/:match*", "destination": "/templates/:match*" }
+  ]
+}

@@ -80,3 +80,24 @@ O Docker automatiza todas as instalações de dependências de sistema (como Pyt
 
 5. **Acessar no Navegador:**
    Abra seu navegador em [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+---
+
+## 🌐 Deploy na Nuvem (Render + Vercel)
+
+Esta aplicação foi preparada para uma arquitetura híbrida de alto desempenho:
+
+### 1. Backend no Render (Web Service Docker)
+1. Crie uma conta no [Render](https://render.com).
+2. Clique em **New +** > **Web Service**.
+3. Conecte o repositório `video-donwloader`.
+4. Em **Environment**, escolha **Docker**.
+5. Em **Instance Type**, escolha **Free**.
+6. Clique em **Deploy Web Service**.
+7. Copie a URL pública gerada (ex: `https://seu-backend.onrender.com`).
+
+### 2. Frontend na Vercel
+1. Crie uma conta na [Vercel](https://vercel.com).
+2. Clique em **Add New...** > **Project** e importe o mesmo repositório.
+3. As configurações já estão definidas automaticamente pelo arquivo `vercel.json`. Basta clicar em **Deploy**.
+4. No site da Vercel, clique no ícone de servidor (ou passe o parâmetro `?backend=https://seu-backend.onrender.com`) para apontar para a sua API no Render.
