@@ -8,6 +8,7 @@ import os
 import shutil
 import uuid
 import glob
+import tempfile
 
 
 # Try to find FFmpeg in winget packages and add it to PATH dynamically
@@ -33,6 +34,18 @@ CORS(app)  # Enable Cross-Origin Resource Sharing
 def sanitize_filename(name):
     cleaned = re.sub(r'[\\/*?:"<>|]', "", name)
     return cleaned.strip()
+
+# Helper to load YouTube cookies (from file or environment variable)
+def get_cookie_file():
+    if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
+        return "cookies.txt"
+    cookies_env = os.environ.get("YOUTUBE_COOKIES")
+    if cookies_env:
+        cookie_path = os.path.join(tempfile.gettempdir(), "yt_cookies.txt")
+        with open(cookie_path, "w", encoding="utf-8") as f:
+            f.write(cookies_env.strip())
+        return cookie_path
+    return None
 
 @app.route('/')
 def index():
@@ -67,27 +80,32 @@ def get_info():
     # Subprocess command to dump metadata JSON
     cmd = [
         sys.executable, "-m", "yt_dlp",
-        "--extractor-args", "youtube:player_client=android,ios,mweb,web",
+        "--extractor-args", "youtube:player_client=tv_embedded,web_embedded,android,ios",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
         "--no-playlist",
         "--socket-timeout", "15",
-        "-j",
-        url
     ]
+    
+    cookie_file = get_cookie_file()
+    if cookie_file:
+        cmd.extend(["--cookies", cookie_file])
+        
+    cmd.extend(["-j", url])
     
     try:
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', stdin=subprocess.DEVNULL)
         if result.returncode != 0:
             # Try to capture clean error message from stderr
             err_msg = result.stderr.strip()
+            print(f"[ERROR] yt-dlp error: {err_msg}", file=sys.stderr)
             # Clean up the error to make it user friendly
             if "Unsupported URL" in err_msg:
                 err_msg = "URL não suportada ou site não compatível."
             elif "Video unavailable" in err_msg:
                 err_msg = "Vídeo indisponível ou privado."
             elif "Failed to extract any player response" in err_msg or "Sign in to confirm you're not a bot" in err_msg or "workaround" in err_msg.lower():
-                err_msg = "O YouTube solicitou verificação temporária para este vídeo nos servidores do Render. Tente outro formato ou tente novamente em instantes."
+                err_msg = "O YouTube bloqueou o IP do servidor em nuvem (Render). Adicione a variável YOUTUBE_COOKIES no Render para liberar vídeos do YouTube, ou teste com links do TikTok, Instagram, Twitter e Facebook."
             else:
                 err_msg = err_msg.split('\n')[-1] if err_msg else "Erro desconhecido ao obter informações."
             return jsonify({'error': err_msg}), 400
@@ -277,14 +295,21 @@ def download():
     
     cmd = [
         sys.executable, "-m", "yt_dlp",
-        "--extractor-args", "youtube:player_client=android,ios,mweb,web",
+        "--extractor-args", "youtube:player_client=tv_embedded,web_embedded,android,ios",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
         "--no-playlist",
         "--socket-timeout", "15",
+    ]
+    
+    cookie_file = get_cookie_file()
+    if cookie_file:
+        cmd.extend(["--cookies", cookie_file])
+        
+    cmd.extend([
         "-f", format_selector,
         "-o", out_template
-    ]
+    ])
     
     # Force MP4 container if merging video and audio
     if not is_combined and ffmpeg_available:
