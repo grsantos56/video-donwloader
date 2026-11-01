@@ -67,6 +67,7 @@ def get_info():
     # Subprocess command to dump metadata JSON
     cmd = [
         sys.executable, "-m", "yt_dlp",
+        "--extractor-args", "youtube:player_client=android,ios,mweb,web",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
         "--no-playlist",
@@ -85,6 +86,8 @@ def get_info():
                 err_msg = "URL não suportada ou site não compatível."
             elif "Video unavailable" in err_msg:
                 err_msg = "Vídeo indisponível ou privado."
+            elif "Failed to extract any player response" in err_msg or "Sign in to confirm you're not a bot" in err_msg or "workaround" in err_msg.lower():
+                err_msg = "O YouTube solicitou verificação temporária para este vídeo nos servidores do Render. Tente outro formato ou tente novamente em instantes."
             else:
                 err_msg = err_msg.split('\n')[-1] if err_msg else "Erro desconhecido ao obter informações."
             return jsonify({'error': err_msg}), 400
@@ -274,6 +277,7 @@ def download():
     
     cmd = [
         sys.executable, "-m", "yt_dlp",
+        "--extractor-args", "youtube:player_client=android,ios,mweb,web",
         "--js-runtimes", "node",
         "--remote-components", "ejs:github",
         "--no-playlist",

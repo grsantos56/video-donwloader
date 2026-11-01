@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Install system dependencies: ffmpeg, nodejs, and clean up apt cache to keep image size small
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -18,7 +18,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -U -r requirements.txt
 
 # Copy the rest of the application code into the container
 COPY . .
