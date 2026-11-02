@@ -42,8 +42,9 @@ def get_cookie_file():
     cookies_env = os.environ.get("YOUTUBE_COOKIES")
     if cookies_env:
         cookie_path = os.path.join(tempfile.gettempdir(), "yt_cookies.txt")
+        content = cookies_env.strip().replace("\\n", "\n").replace("\r\n", "\n")
         with open(cookie_path, "w", encoding="utf-8") as f:
-            f.write(cookies_env.strip())
+            f.write(content + "\n")
         return cookie_path
     return None
 
@@ -80,8 +81,6 @@ def get_info():
     # Subprocess command to dump metadata JSON
     cmd = [
         sys.executable, "-m", "yt_dlp",
-        "--extractor-args", "youtube:player_client=tv_embedded,web_embedded,android,ios",
-        "--js-runtimes", "node",
         "--remote-components", "ejs:github",
         "--no-playlist",
         "--socket-timeout", "15",
@@ -90,6 +89,8 @@ def get_info():
     cookie_file = get_cookie_file()
     if cookie_file:
         cmd.extend(["--cookies", cookie_file])
+    else:
+        cmd.extend(["--extractor-args", "youtube:player_client=android,ios,web_embedded"])
         
     cmd.extend(["-j", url])
     
@@ -295,8 +296,6 @@ def download():
     
     cmd = [
         sys.executable, "-m", "yt_dlp",
-        "--extractor-args", "youtube:player_client=tv_embedded,web_embedded,android,ios",
-        "--js-runtimes", "node",
         "--remote-components", "ejs:github",
         "--no-playlist",
         "--socket-timeout", "15",
@@ -305,6 +304,8 @@ def download():
     cookie_file = get_cookie_file()
     if cookie_file:
         cmd.extend(["--cookies", cookie_file])
+    else:
+        cmd.extend(["--extractor-args", "youtube:player_client=android,ios,web_embedded"])
         
     cmd.extend([
         "-f", format_selector,

@@ -9,3 +9,5 @@ __pycache__/
 .idea/
 downloads/
 static/downloads/
+*cookies*.txt
+cookies.txt
