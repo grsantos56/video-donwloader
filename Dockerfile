@@ -1,16 +1,22 @@
 # Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Install system dependencies: ffmpeg, nodejs, and clean up apt cache to keep image size small
+# Install system dependencies: ffmpeg, git, nodejs, deno, and build bgutil PO Token provider
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     unzip \
     gnupg \
+    git \
+    ca-certificates \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && curl -fsSL https://deno.land/install.sh | sh \
     && cp /root/.deno/bin/deno /usr/local/bin/deno \
+    && git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git /opt/bgutil \
+    && cd /opt/bgutil/server \
+    && npm ci \
+    && npx tsc \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
