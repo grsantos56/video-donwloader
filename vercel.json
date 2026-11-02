@@ -2,6 +2,7 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/", "destination": "/templates/index.html" },
+    { "source": "/ads.txt", "destination": "/templates/ads.txt" },
     { "source": "/favicon.ico", "destination": "/templates/logo.ico" },
     { "source": "/logo.ico", "destination": "/templates/logo.ico" },
     { "source": "/logo.png", "destination": "/templates/logo.png" },

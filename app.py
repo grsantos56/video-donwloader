@@ -68,6 +68,10 @@ def favicon():
 def logo_png():
     return send_file('templates/logo.png', mimetype='image/png')
 
+@app.route('/ads.txt')
+def ads_txt():
+    return send_file('templates/ads.txt', mimetype='text/plain')
+
 
 
 @app.route('/api/info', methods=['POST'])
