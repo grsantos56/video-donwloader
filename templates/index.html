@@ -459,6 +459,9 @@
             ? ''
             : RENDER_BACKEND_URL;
 
+        // Pre-warm: acorda o servidor no Render assim que a página abre
+        fetch(`${BACKEND_URL}/api/health`, { mode: 'cors' }).catch(() => {});
+
         // Form submission -> Fetch metadata
         urlForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -684,6 +687,12 @@
             if (!urlInput.value || !selectedFormatId) return;
 
             // Show loading status
+            const statusSpan = downloadStatus.querySelector('span');
+            if (statusSpan) {
+                statusSpan.textContent = selectedIsCombined
+                    ? 'Iniciando download direto no navegador...'
+                    : 'Mesclando vídeo HD e áudio em alta velocidade no servidor. O download iniciará em instantes...';
+            }
             downloadStatus.classList.remove('hidden');
             downloadBtn.disabled = true;
             downloadBtn.classList.add('opacity-75');
