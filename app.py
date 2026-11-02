@@ -78,39 +78,68 @@ def sanitize_filename(name):
     cleaned = re.sub(r'[\\/*?:"<>|]', "", name)
     return cleaned.strip() or "video"
 
-# Helper to load YouTube cookies (from file or environment variable, raw or base64)
+# Helper to load YouTube cookies (from file, /etc/secrets/cookies.txt, or environment variable)
+# Copies once to a writable temp file so yt-dlp can persist rotated session cookies across requests
+_COOKIE_SOURCE_HASH = None
+
 def get_cookie_file():
-    if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
-        return "cookies.txt"
-    cookies_env = os.environ.get("YOUTUBE_COOKIES")
-    if cookies_env:
-        raw = cookies_env.strip()
-        if "youtube.com" not in raw and "Netscape" not in raw:
+    global _COOKIE_SOURCE_HASH
+    raw_content = None
+
+    for candidate in ("/etc/secrets/cookies.txt", "cookies.txt"):
+        if os.path.exists(candidate) and os.path.getsize(candidate) > 0:
             try:
-                decoded = base64.b64decode(raw).decode("utf-8", errors="ignore")
-                if "youtube.com" in decoded or "Netscape" in decoded:
-                    raw = decoded
+                with open(candidate, "r", encoding="utf-8", errors="ignore") as f:
+                    raw_content = f.read().strip()
+                if raw_content:
+                    break
             except Exception:
                 pass
-        content = raw.replace("\\n", "\n").replace("\r\n", "\n")
-        lines = []
-        for line in content.split("\n"):
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
-                lines.append(line)
-                continue
-            if "\t" not in stripped and len(stripped.split()) >= 7:
-                parts = stripped.split(None, 6)
-                lines.append("\t".join(parts))
-            else:
-                lines.append(line)
-        cookie_path = os.path.join(tempfile.gettempdir(), "yt_cookies.txt")
-        with open(cookie_path, "w", encoding="utf-8") as f:
-            if not any("Netscape HTTP Cookie File" in l for l in lines[:3]):
-                f.write("# Netscape HTTP Cookie File\n")
-            f.write("\n".join(lines) + "\n")
+
+    if not raw_content:
+        cookies_env = os.environ.get("YOUTUBE_COOKIES")
+        if cookies_env:
+            raw_content = cookies_env.strip()
+
+    if not raw_content:
+        return None
+
+    if "youtube.com" not in raw_content and "Netscape" not in raw_content:
+        try:
+            decoded = base64.b64decode(raw_content).decode("utf-8", errors="ignore")
+            if "youtube.com" in decoded or "Netscape" in decoded:
+                raw_content = decoded
+        except Exception:
+            pass
+
+    cookie_path = os.path.join(tempfile.gettempdir(), "yt_cookies.txt")
+    source_hash = hash(raw_content)
+
+    # Only write initial cookies if source changed or temp file doesn't exist yet,
+    # preserving yt-dlp's rotated cookies in cookie_path
+    if _COOKIE_SOURCE_HASH == source_hash and os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
         return cookie_path
-    return None
+
+    content = raw_content.replace("\\n", "\n").replace("\r\n", "\n")
+    lines = []
+    for line in content.split("\n"):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            lines.append(line)
+            continue
+        if "\t" not in stripped and len(stripped.split()) >= 7:
+            parts = stripped.split(None, 6)
+            lines.append("\t".join(parts))
+        else:
+            lines.append(line)
+
+    with open(cookie_path, "w", encoding="utf-8") as f:
+        if not any("Netscape HTTP Cookie File" in l for l in lines[:3]):
+            f.write("# Netscape HTTP Cookie File\n")
+        f.write("\n".join(lines) + "\n")
+
+    _COOKIE_SOURCE_HASH = source_hash
+    return cookie_path
 
 def is_youtube_url(url):
     if not url:
@@ -208,7 +237,7 @@ def get_youtube_info_pytubefix(url):
     except ImportError:
         return None
 
-    clients = ['WEB', 'MWEB', 'TV', 'ANDROID_VR', 'WEB_EMBED', 'IOS']
+    clients = ['ANDROID_VR', 'TV', 'MWEB', 'WEB_EMBED', 'WEB', 'IOS']
     ffmpeg_available = shutil.which("ffmpeg") is not None
 
     for client in clients:
@@ -486,14 +515,19 @@ def build_ytdlp_attempts(url, cookie_file):
                 "--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416",
             ]
         attempts.append(cmd_with_cookies)
-    else:
-        if is_youtube_url(url):
-            attempts.append(base_cmd + [
-                "--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416",
-                "--extractor-args", "youtube:player_client=web,mweb,tv_embedded,android_vr"
-            ])
-        else:
-            attempts.append(base_cmd)
+
+    if is_youtube_url(url):
+        # Fast embedded/mobile clients without cookies (works even if cookies expired or aren't set)
+        attempts.append(base_cmd + [
+            "--extractor-args", "youtube:player_client=tv_embedded,mweb,android_vr"
+        ])
+        # With bgutil PO Token HTTP provider + mweb/tv/web
+        attempts.append(base_cmd + [
+            "--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416",
+            "--extractor-args", "youtube:player_client=mweb,tv,web"
+        ])
+    elif not cookie_file:
+        attempts.append(base_cmd)
     return attempts
 
 
@@ -740,7 +774,7 @@ def get_info():
 
 def download_with_pytubefix(url, format_id, task_id, ext, is_combined, ffmpeg_available):
     from pytubefix import YouTube
-    clients = ['WEB', 'MWEB', 'TV', 'ANDROID_VR', 'WEB_EMBED', 'IOS']
+    clients = ['ANDROID_VR', 'TV', 'MWEB', 'WEB_EMBED', 'WEB', 'IOS']
     preferred_client = None
     target_itag = None
 
