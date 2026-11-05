@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>MediaFlow Extension</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      width: 370px;
+      min-height: 240px;
+      background-color: #09090b;
+      color: #f4f4f5;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #27272a;
+      margin-bottom: 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 16px;
+      background: linear-gradient(90deg, #60a5fa, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge {
+      font-size: 10px;
+      background: #18181b;
+      border: 1px solid #27272a;
+      color: #a1a1aa;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .url-box {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .url-input {
+      flex: 1;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 10px;
+      padding: 9px 11px;
+      color: #f4f4f5;
+      font-size: 12px;
+      outline: none;
+    }
+    .url-input:focus {
+      border-color: #0ea5e9;
+    }
+    .analyze-btn {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .analyze-btn:hover {
+      background: #0ea5e9;
+    }
+    .analyze-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status-box {
+      text-align: center;
+      padding: 20px 10px;
+      color: #a1a1aa;
+      font-size: 12px;
+    }
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2.5px solid #27272a;
+      border-top-color: #0ea5e9;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .error-box {
+      display: none;
+      background: rgba(127, 29, 29, 0.25);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .result-box {
+      display: none;
+    }
+    .video-header {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      background: #18181b;
+      padding: 8px;
+      border-radius: 12px;
+      border: 1px solid #27272a;
+    }
+    .thumb-wrap {
+      position: relative;
+      width: 100px;
+      height: 58px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+    .thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .duration {
+      position: absolute;
+      bottom: 3px;
+      right: 3px;
+      background: rgba(9, 9, 11, 0.85);
+      color: #e4e4e7;
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    .video-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #f4f4f5;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #27272a;
+      margin-bottom: 10px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #a1a1aa;
+      padding: 7px 0;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      color: #38bdf8;
+      border-bottom-color: #0ea5e9;
+    }
+    .formats-list {
+      max-height: 165px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding-right: 2px;
+    }
+    .format-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 9px;
+      cursor: pointer;
+      color: #e4e4e7;
+      font-size: 12px;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .format-item:hover {
+      border-color: #3f3f46;
+    }
+    .format-item.selected {
+      border-color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.12);
+    }
+    .format-name {
+      font-weight: 600;
+    }
+    .format-size {
+      font-size: 11px;
+      color: #a1a1aa;
+    }
+    .download-btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 11px;
+      background: linear-gradient(90deg, #0284c7, #2563eb);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .download-btn:hover {
+      opacity: 0.92;
+    }
+    .download-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .dl-feedback {
+      display: none;
+      margin-top: 8px;
+      text-align: center;
+      font-size: 11px;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <img src="logo.png" alt="MediaFlow">
+      <span class="brand-title">MediaFlow</span>
+    </div>
+    <span class="badge">Extensão v1.0</span>
+  </div>
+
+  <div class="url-box">
+    <input type="url" id="url-input" class="url-input" placeholder="Cole o link ou abra um vídeo...">
+    <button id="analyze-btn" class="analyze-btn">Analisar</button>
+  </div>
+
+  <div id="error-box" class="error-box"></div>
+
+  <div id="loading-box" class="status-box" style="display: none;">
+    <div class="spinner"></div>
+    <div id="loading-text">Analisando vídeo da aba atual...</div>
+  </div>
+
+  <div id="result-box" class="result-box">
+    <div class="video-header">
+      <div class="thumb-wrap">
+        <img id="video-thumb" src="" alt="Thumbnail">
+        <span id="video-duration" class="duration">00:00</span>
+      </div>
+      <div id="video-title" class="video-title">Título do vídeo</div>
+    </div>
+
+    <div class="tabs">
+      <button id="tab-video" class="tab-btn active">Vídeo (MP4)</button>
+      <button id="tab-audio" class="tab-btn">Apenas Áudio</button>
+    </div>
+
+    <div id="formats-list" class="formats-list"></div>
+
+    <button id="download-btn" class="download-btn">⬇ Baixar Arquivo</button>
+    <div id="dl-feedback" class="dl-feedback">Iniciando download no navegador...</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

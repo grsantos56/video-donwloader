@@ -754,6 +754,16 @@
             const isCurrentlyDark = htmlElement.classList.contains('dark');
             setTheme(!isCurrentlyDark);
         });
+
+        // Auto-analisar caso receba ?url=... via extensão ou compartilhamento
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const sharedUrl = params.get('url');
+            if (sharedUrl && sharedUrl.startsWith('http')) {
+                urlInput.value = sharedUrl;
+                urlForm.requestSubmit();
+            }
+        });
     </script>
 </body>
 </html>
